@@ -1,0 +1,14 @@
+import {build} from 'esbuild';
+import {rm,mkdir,readFile,writeFile,cp} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+process.chdir(root);
+await rm('dist',{recursive:true,force:true});
+await mkdir('dist/assets',{recursive:true});
+await build({entryPoints:['src/main.jsx'],outdir:'dist/assets',bundle:true,splitting:true,format:'esm',minify:true,entryNames:'app',chunkNames:'chunk-[hash]',assetNames:'asset-[hash]',target:['es2020'],loader:{'.ttf':'file'},define:{'process.env.NODE_ENV':'"production"'},logLevel:'info'});
+await cp('public','dist',{recursive:true});
+let html=await readFile('index.html','utf8');
+html=html.replace('<script type="module" src="/src/main.jsx"></script>','<script type="module" src="./assets/app.js"></script>').replace('</head>','<link rel="stylesheet" href="./assets/app.css"/></head>');
+await writeFile('dist/index.html',html);
+console.log('Production build ready in dist/');
